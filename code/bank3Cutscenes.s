@@ -532,9 +532,8 @@ intro_titlescreen:
 	ld a,(wTmpcbb3)
 	and $20
 	ret nz
-	ld hl,bank3f.titlescreenPressStartSprites
-	ld e,:bank3f.titlescreenPressStartSprites
-	jp addSpritesFromBankToOam
+	; Display track number instead of "Press Start"
+	jp titlescreen_drawTrackNumber
 
 .else; ROM_SEASONS
 
@@ -544,8 +543,8 @@ intro_titlescreen:
 	ld a,(wTmpcbb3)
 	and $20
 	ret nz
-	ld hl,titlescreenPressStartSprites
-	jp addSpritesToOam
+	; Display track number instead of "Press Start"
+	jp titlescreen_drawTrackNumber
 .endif
 
 ;;
@@ -579,6 +578,13 @@ intro_titlescreen_state0:
 	ld a,$09
 	ldi (hl),a ; [wTmpcbb4] = $09
 
+	; Initialize sound test: wTmpcbb5 = current track number
+	; wTmpcbb6 = delay counter before playing (0 = no delay pending)
+	ld a,MUS_TITLESCREEN
+	ld (wTmpcbb5),a
+	xor a
+	ld (wTmpcbb6),a
+
 	call intro_incState
 
 	ld a,MUS_TITLESCREEN
@@ -590,16 +596,64 @@ intro_titlescreen_state0:
 ;;
 ; State 1: waiting for player to press start
 intro_titlescreen_state1:
+	; Check if we have a pending track to play after delay
+	ld a,(wTmpcbb6)
+	or a
+	jr z,@noDelayPending
+	dec a
+	ld (wTmpcbb6),a
+	jr nz,@checkInputs
+	; Delay finished, play the track now
+	ld a,(wTmpcbb5)
+	call playSound
+	jr @checkInputs
+
+@noDelayPending:
+@checkInputs:
 	ld a,(wKeysJustPressed)
 	and BTN_START
 	jr nz,@pressedStart
 
-	; Check to automatically exit the titlescreen
+	; Sound test: Check for left/right key presses
+	ld a,(wKeysJustPressed)
+	and BTN_RIGHT
+	jr nz,@nextTrack
+	ld a,(wKeysJustPressed)
+	and BTN_LEFT
+	jr nz,@prevTrack
+
+	; Decrement blink timer (for sprite blinking effect) but don't auto-exit
 	ld hl,wTmpcbb3
 	call decHlRef16WithCap
-	ret nz
-	ld a,$02
-	jr @gotoState
+	; Ignore the zero result - don't exit to cutscene
+	ret
+
+@nextTrack:
+	; Increment track, wrap at MUS_MAX_TRACK+1 back to 0
+	ld a,(wTmpcbb5)
+	inc a
+	cp MUS_MAX_TRACK+1
+	jr c,@setTrack
+	xor a
+	jr @setTrack
+
+@prevTrack:
+	; Decrement track, wrap at 0 to MUS_MAX_TRACK
+	ld a,(wTmpcbb5)
+	or a
+	jr nz,@decTrack
+	ld a,MUS_MAX_TRACK+1
+@decTrack:
+	dec a
+
+@setTrack:
+	ld (wTmpcbb5),a
+	; Stop current music and set delay before playing new track
+	ld a,SNDCTRL_STOPMUSIC
+	call playSound
+	ld a,30            ; ~500ms delay at 60fps
+	ld (wTmpcbb6),a
+	ret
 
 @pressedStart:
 	ld a,SND_SELECTITEM
@@ -632,6 +686,81 @@ intro_titlescreen_state3:
 	ld bc,fileSelectThreadStart
 	call threadRestart
 	jp stubThreadStart
+
+;;
+; Draw track number on the title screen using dynamically generated sprites
+; Displays "0xYY" where YY is the current track number in hex
+titlescreen_drawTrackNumber:
+	; Get OAM tail position
+	ldh a,(<hOamTail)
+	cp $a0
+	ret nc
+	ld e,a
+	ld d,>wOam
+
+	; Sprite format: Y, X, Tile, Attr
+	; Hex digit tiles: after interleaving, digit N is at tile $38 + N*2
+	; (Hex digits are in row 0 of PNG, which maps to VRAM tiles $38-$56)
+	; Display "0YY" centered (3 sprites × 8 pixels = 24 pixels)
+	; Screen is 160 pixels, center at X = (160-24)/2 + 8 = 76 = $4C
+
+	; Get the track number from wTmpcbb5
+	ld a,(wTmpcbb5)
+	ld b,a
+
+	; Draw "0" prefix at X=$4C (leftmost digit)
+	ld a,$80           ; Y position
+	ld (de),a
+	inc e
+	ld a,$4C           ; X position
+	ld (de),a
+	inc e
+	ld a,$38           ; Tile $38 = digit "0"
+	ld (de),a
+	inc e
+	xor a              ; Attr = 0
+	ld (de),a
+	inc e
+
+	; Draw high nibble at X=$54
+	ld a,$80           ; Y position
+	ld (de),a
+	inc e
+	ld a,$54           ; X position
+	ld (de),a
+	inc e
+	ld a,b
+	swap a             ; Get high nibble
+	and $0F
+	add a              ; Double it (tiles are at $38 + digit*2 due to interleaving)
+	add $38            ; Convert to tile index
+	ld (de),a
+	inc e
+	xor a              ; Attr = 0
+	ld (de),a
+	inc e
+
+	; Draw low nibble at X=$5C
+	ld a,$80           ; Y position
+	ld (de),a
+	inc e
+	ld a,$5C           ; X position
+	ld (de),a
+	inc e
+	ld a,b
+	and $0F            ; Get low nibble
+	add a              ; Double it (tiles are at $38 + digit*2 due to interleaving)
+	add $38            ; Convert to tile index
+	ld (de),a
+	inc e
+	xor a              ; Attr = 0
+	ld (de),a
+	inc e
+
+	; Update OAM tail
+	ld a,e
+	ldh (<hOamTail),a
+	ret
 
 .ifdef ROM_SEASONS
 
