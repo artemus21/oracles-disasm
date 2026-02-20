@@ -65,11 +65,11 @@ interactionCode1e:
 	ld (de),a
 
 .ifdef REGION_EU
-	ld a,($d033)
+	ld a,(w7TextboxMap+$33) ; why???
 	inc a
 	ret nz
 
-	jp $4703
+	jp @checkRespawnLink
 .else
 	ret
 .endif

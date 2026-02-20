@@ -351,9 +351,12 @@ itemCode29:
 	ld (hl),a
 .ifdef REGION_EU
 	ret nz
+
+	; Zero out var33?
 	xor a
 	ld (de),a
 .endif
+
 	ret
 
 @loadBIntoAngleIfLinkLeftOfBallElseLoadC:

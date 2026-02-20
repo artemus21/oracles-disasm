@@ -357,7 +357,7 @@ interactionCode8c:
 	ld (hl),a
 
 .ifdef REGION_EU
-	ld e,$40
+	ld e,Interaction.enabled
 	ld a,(de)
 	res 1,a
 	ld (de),a

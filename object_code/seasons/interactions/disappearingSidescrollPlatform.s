@@ -253,9 +253,9 @@ sidescrollPlatform_checkLinkIsClose:
 sidescrollPlatform_getTileCollisionBehindLink:
 
 .ifdef REGION_EU
-	ld e,$41
+	ld e,Interaction.id
 	ld a,(de)
-	cp $a3
+	cp INTERAC_DISAPPEARING_SIDESCROLL_PLATFORM
 	ld bc,$fb04
 	jr nz,+
 	ld bc,$f40b
@@ -265,15 +265,19 @@ sidescrollPlatform_getTileCollisionBehindLink:
 	ld l,Interaction.xh
 	ld a,(w1Link.xh)
 	cp (hl)
+
 .ifndef REGION_EU
 	ld b,-$05
 .endif
+
 	jr c,+
+
 .ifdef REGION_EU
 	ld b,c
 .else
 	ld b,$04
 .endif
+
 +
 	add b
 	ld c,a
@@ -415,6 +419,7 @@ sidescrollPlatform_pushLinkAwayHorizontal:
 	ld e,Interaction.xh
 +++
 	ld a,(de)
+
 .ifdef REGION_EU
 	ld c,a
 	ld a,(hl)
@@ -424,6 +429,7 @@ sidescrollPlatform_pushLinkAwayHorizontal:
 	cp (hl)
 	jr c,++
 .endif
+
 	ld a,b
 	cpl
 	inc a
