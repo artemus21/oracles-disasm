@@ -8,6 +8,24 @@ fileManagementFunction:
 	.dw saveFile
 	.dw loadFile
 	.dw eraseFile
+.ifdef REGION_EU
+	.dw extra1
+	.dw extra2
+
+extra1:
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0
+extra2:
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0
+.endif
 
 ;;
 initializeFile:
@@ -99,6 +117,11 @@ saveFile:
 
 	; Redundant?
 	jr verifyFileCopies
+
+.ifdef REGION_EU
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0
+.endif
 
 ;;
 loadFile:

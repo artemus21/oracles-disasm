@@ -342,6 +342,11 @@ runIntro:
 	call serialFunc_0c8d
 	ld a,$09
 	ld (wTmpcbb4),a
+
+.ifdef REGION_EU
+	.db 0 0 0
+.endif
+
 	jr @nextStage
 +
 	call serialFunc_0c85
@@ -487,6 +492,10 @@ intro_capcomScreen:
 	call fadeinFromWhite
 	xor a
 	jp loadGfxRegisterStateIndex
+
+.ifdef REGION_EU
+	.db 0 0 0 0
+.endif
 
 ;;
 ; Fading in, waiting
@@ -1688,7 +1697,9 @@ clearFadingPalettes_body:
 		.dw @data3
 		.dw @data4
 
+.ifndef REGION_EU
 		.db $03 ; ???
+.endif
 
 	@data1:
 		.db $02 $04 $06 $08 $0c $0e $10 $ff

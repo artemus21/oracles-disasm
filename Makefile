@@ -144,15 +144,16 @@ GFX_PRECMP_DIR = 'precompressed/gfx_compressible'
 OBJS = $(BUILD_DIR)/$(GAME).o $(BUILD_DIR)/audio.o
 
 
-# All .bin/.png gfx files and paths. Include _jp variants when building JP.
+# All .bin/.png gfx files and paths. Include _<region> variants when building JP/EU.
 GFX_UNCMP_PATHS = $(GFX_UNCMP_DIR)/common $(GFX_UNCMP_DIR)/$(GAME)
 GFX_CMP_PATHS   = $(GFX_CMP_DIR)/common $(GFX_CMP_DIR)/$(GAME)
 GFX_PRECMP_PATHS = $(GFX_PRECMP_DIR)/common $(GFX_PRECMP_DIR)/$(GAME)
 
-ifeq ($(REGION), jp)
-GFX_UNCMP_PATHS += $(GFX_UNCMP_DIR)/common_jp $(GFX_UNCMP_DIR)/$(GAME)_jp
-GFX_CMP_PATHS   += $(GFX_CMP_DIR)/common_jp $(GFX_CMP_DIR)/$(GAME)_jp
-GFX_PRECMP_PATHS += $(GFX_PRECMP_DIR)/common_jp $(GFX_PRECMP_DIR)/$(GAME)_jp
+ifneq ($(filter jp eu,$(REGION)),)
+REGION_SUFFIX = _$(REGION)
+GFX_UNCMP_PATHS += $(GFX_UNCMP_DIR)/common$(REGION_SUFFIX) $(GFX_UNCMP_DIR)/$(GAME)$(REGION_SUFFIX)
+GFX_CMP_PATHS   += $(GFX_CMP_DIR)/common$(REGION_SUFFIX) $(GFX_CMP_DIR)/$(GAME)$(REGION_SUFFIX)
+GFX_PRECMP_PATHS += $(GFX_PRECMP_DIR)/common$(REGION_SUFFIX) $(GFX_PRECMP_DIR)/$(GAME)$(REGION_SUFFIX)
 endif
 
 # All .bin gfx files
@@ -195,9 +196,9 @@ endif
 ROOMLAYOUTFILES = $(wildcard rooms/$(GAME)/small/*.bin)
 ROOMLAYOUTFILES += $(wildcard rooms/$(GAME)/large/*.bin)
 
-ifeq ($(REGION), jp)
-ROOMLAYOUTFILES += $(wildcard rooms/$(GAME)_jp/small/*.bin)
-ROOMLAYOUTFILES += $(wildcard rooms/$(GAME)_jp/large/*.bin)
+ifneq ($(filter jp eu,$(REGION)),)
+ROOMLAYOUTFILES += $(wildcard rooms/$(GAME)$(REGION_SUFFIX)/small/*.bin)
+ROOMLAYOUTFILES += $(wildcard rooms/$(GAME)$(REGION_SUFFIX)/large/*.bin)
 endif
 
 ROOMLAYOUTFILES := $(ROOMLAYOUTFILES:.bin=.cmp)
@@ -206,8 +207,8 @@ ROOMLAYOUTFILES := $(foreach file, $(ROOMLAYOUTFILES), \
 
 COLLISIONFILES = $(wildcard tileset_layouts/$(GAME)/tilesetCollisions*.bin)
 
-ifeq ($(REGION), jp)
-COLLISIONFILES += $(wildcard tileset_layouts/$(GAME)_jp/tilesetCollisions*.bin)
+ifneq ($(filter jp eu,$(REGION)),)
+COLLISIONFILES += $(wildcard tileset_layouts/$(GAME)$(REGION_SUFFIX)/tilesetCollisions*.bin)
 endif
 
 COLLISIONFILES := $(COLLISIONFILES:.bin=.cmp)
@@ -216,8 +217,8 @@ COLLISIONFILES := $(foreach file, $(COLLISIONFILES), \
 
 MAPPINGINDICESFILES = $(wildcard tileset_layouts/$(GAME)/tilesetMappings*.bin)
 
-ifeq ($(REGION), jp)
-MAPPINGINDICESFILES += $(wildcard tileset_layouts/$(GAME)_jp/tilesetMappings*.bin)
+ifneq ($(filter jp eu,$(REGION)),)
+MAPPINGINDICESFILES += $(wildcard tileset_layouts/$(GAME)$(REGION_SUFFIX)/tilesetMappings*.bin)
 endif
 MAPPINGINDICESFILES := $(foreach file, $(MAPPINGINDICESFILES), \
                          $(BUILD_DIR)/tileset_layouts/$(notdir $(file)))
@@ -277,8 +278,8 @@ $(BUILD_DIR)/$(GAME).o: $(GAME).s $(TEXT_DATA_FILE) $(BUILD_DIR)/textDefines.s M
 $(BUILD_DIR)/%.o: code/%.s | $(BUILD_DIR)
 	$(CC) -o $@ $(CFLAGS) $<
 
-ifeq ($(REGION), jp)
-$(BUILD_DIR)/rooms/%.cmp: rooms/$(GAME)_jp/small/%.bin | $(BUILD_DIR)/rooms
+ifneq ($(filter jp eu,$(REGION)),)
+$(BUILD_DIR)/rooms/%.cmp: rooms/$(GAME)$(REGION_SUFFIX)/small/%.bin | $(BUILD_DIR)/rooms
 	@echo "Compressing $< to $@..."
 	@$(PYTHON) tools/build/compressRoomLayout.py $< $@ $(OPTIMIZE)
 endif
@@ -352,7 +353,7 @@ endif
 ifeq ($(BUILD_VANILLA),true)
 
 # Precompressed copy rules for vanilla builds.
-# For JP, game_jp source rules are listed first to take priority over the
+# For JP/EU, game_<region> source rules are listed first to take priority over the
 # generic game rules (which serve as fallback for shared files).
 define define_precmp_copy_rule
 $(BUILD_DIR)/$(1)/%.$(2): precompressed/$(1)/$(3)/%.$(2) | $(BUILD_DIR)/$(1)
@@ -360,10 +361,10 @@ $(BUILD_DIR)/$(1)/%.$(2): precompressed/$(1)/$(3)/%.$(2) | $(BUILD_DIR)/$(1)
 	@cp $$< $$@
 endef
 
-ifeq ($(REGION), jp)
-$(eval $(call define_precmp_copy_rule,tileset_layouts,bin,$(GAME)_jp))
-$(eval $(call define_precmp_copy_rule,tileset_layouts,cmp,$(GAME)_jp))
-$(eval $(call define_precmp_copy_rule,rooms,cmp,$(GAME)_jp))
+ifneq ($(filter jp eu,$(REGION)),)
+$(eval $(call define_precmp_copy_rule,tileset_layouts,bin,$(GAME)$(REGION_SUFFIX)))
+$(eval $(call define_precmp_copy_rule,tileset_layouts,cmp,$(GAME)$(REGION_SUFFIX)))
+$(eval $(call define_precmp_copy_rule,rooms,cmp,$(GAME)$(REGION_SUFFIX)))
 endif
 
 $(eval $(call define_precmp_copy_rule,tileset_layouts,bin,$(GAME)))
@@ -406,10 +407,10 @@ $(BUILD_DIR)/tileset_layouts/tilesetCollisions%.cmp: tileset_layouts/$(GAME)/til
 	@$(PYTHON) tools/build/compressTilesetLayoutData.py $< $@ 0 $(BUILD_DIR)/tileset_layouts/collisionsDictionary.bin
 
 # Generate large room compression rules for each group prefix (04, 05, 06).
-# For JP, the _jp source directory rules are listed first to take priority.
+# For JP/EU, the _<region> source directory rules are listed first to take priority.
 define define_large_room_rules
-ifeq ($(REGION), jp)
-$(BUILD_DIR)/rooms/room$(1)%.cmp: rooms/$(GAME)_jp/large/room$(1)%.bin | $(BUILD_DIR)/rooms
+ifneq ($(filter jp eu,$(REGION)),)
+$(BUILD_DIR)/rooms/room$(1)%.cmp: rooms/$(GAME)$(REGION_SUFFIX)/large/room$(1)%.bin | $(BUILD_DIR)/rooms
 	@echo "Compressing $$< to $$@..."
 	@$$(PYTHON) tools/build/compressRoomLayout.py $$< $$@ -d rooms/$(GAME)/dictionary$(2).bin
 endif

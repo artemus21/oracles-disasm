@@ -89,11 +89,21 @@ updateTilesetFlagsForIndoorRoomInAltWorld:
 ; @param	b	Number of characters to copy
 ; @param	de	Destination
 copyTextCharactersFromSecretTextTable:
+.ifdef REGION_EU
+	ld c,a
+	ld a,($c62a)
+.endif
 	ld hl,secretTextTable
 	rst_addDoubleIndex
 	ldi a,(hl)
 	ld h,(hl)
 	ld l,a
+
+.ifdef REGION_EU
+	ld a,c
+	rst_addDoubleIndex
+	.db $2a $66 $6f
+.endif
 
 ;;
 copyTextCharactersFromHlUntilNull:
@@ -145,6 +155,9 @@ b2_fileSelectScreen:
 	.dw fileSelectMode5 ; Selecting between new game, secret, link
 	.dw fileSelectMode6 ; Entering a secret
 	.dw fileSelectMode7 ; Game link
+.ifdef REGION_EU
+	.dw fileSelectMode8
+.endif
 
 ;;
 func_02_4149:
@@ -213,6 +226,12 @@ getFileDisplayVariableAddress_paramE:
 	rst_addAToHl
 	ret
 
+.ifdef REGION_EU
+	ld a,$08
+	call $4126
+	jp $4979
+.endif
+
 ;;
 ; Initialization of file select screen
 fileSelectMode0:
@@ -226,7 +245,24 @@ fileSelectMode0:
 	call playSound
 	xor a
 	ld (wLastSecretInputLength),a
+.ifdef REGION_EU
+	call $09f2
+	inc a
+	jr z,-$27
+	call $4af3
+	ld de,$0003
+	dec e
+	call $4146
+	bit 7,(hl)
+	jr z,$06
+	ld a,e
+	or a
+	jr nz,-$0c
+	jr -$3b
+.endif
 	call setFileSelectModeTo1
+
+	
 ;;
 ; Main mode, selecting a file
 fileSelectMode1:
@@ -252,6 +288,10 @@ fileSelectMode1:
 	call disableLcd
 	ld a,GFXH_FILE_MENU_WITH_MESSAGE_SPEED
 	call loadGfxHeader
+.ifdef REGION_EU
+	ld a,$46
+	call $0602
+.endif
 	ld a,PALH_05
 	call loadPaletteHeader
 	call loadFileDisplayVariables
@@ -262,6 +302,17 @@ fileSelectMode1:
 ;;
 ; Normal mode
 @state1:
+.ifdef REGION_EU
+	ld a,($c482)
+	bit 1,a
+	jp nz,$4150
+	bit 2,a
+	jr z,$0b
+	ld a,$e0
+	ld bc,$2c78
+	call $0898
+	jp $08d7
+.endif
 	call fileSelectUpdateInput
 	jr nz,++
 
@@ -833,6 +884,11 @@ fileSelectMode6:
 	call secretFunctionCaller
 	jp nz,fileSelect_printError
 
+.ifdef REGION_EU
+	call $49fb
+	jp nz,$45ff
+.endif
+
 	ld a,($ced2)
 	or a
 	jr z,+
@@ -1216,15 +1272,31 @@ runTextInput:
 
 	rrca
 	and $3f
-	add $40
-
+.ifdef REGION_EU
 	ld c,a
+	ld hl,$00a1
+.else
+	add $40
+	ld c,a
+.endif
+
 	ld a,(wFileSelect.textInputMode)
 	rlca
+
+.ifdef REGION_EU
+	jr c,$0c
+	ld hl,$4a3a
+	ld a,($cbb9)
+	or a
+	jr z,$03
+	ld hl,$4a77
+	ld a,c
+.else
 	jr nc,@gotCharacter
 
 	ld a,c
 	ld hl,secretSymbols-$40
+.endif
 	rst_addAToHl
 	ld c,(hl)
 .endif
@@ -1257,6 +1329,10 @@ runTextInput:
 	.dw @selectHiragana
 .endif
 	.dw @startButton
+.ifdef REGION_EU
+	.dw @euButton
+	.dw @euButton
+.endif
 
 @secretTable:
 	rst_jumpTable
@@ -1264,6 +1340,8 @@ runTextInput:
 	.dw @selectionRight
 	.dw @back
 	.dw @startButton
+
+@euButton:
 
 @bButton:
 	call textInput_getOutputAddress
@@ -1317,12 +1395,29 @@ runTextInput:
 .else ; REGION_US, REGION_EU
 
 @selectButton:
+.ifdef REGION_EU
+	ld a,($cbb9)
+	xor $01
+	jr $05
+	ld a,$01
+	jr $01
+	xor a
+	ld ($cbb9),a
+.else
 	ret
+.endif
 
 @back:
 	ld a,(wFileSelect.textInputMode)
 	rlca
+.ifdef REGION_EU
+	jr c,$08
+	call $4ab5
+	ld a,$0b
+	jp $05b6
+.else
 	ret nc
+.endif
 
 	xor a
 	ld (wTmpcbb9),a
@@ -1409,8 +1504,17 @@ runTextInput:
 	ret
 @@lowerOptions:
 	inc l
+.ifdef REGION_EU
+	ld b,$05
+	ld a,($cbb7)
+	rlca
+	ld a,(hl)
+	jr nc,$01
+	dec b
+.else
 	ld b,d
 	ld a,(hl)
+.endif
 -
 	add c
 	and $0f
@@ -1538,7 +1642,7 @@ drawNameInputCursors:
 ; Extra options like cursor left, cursor right, back, OK
 @lowerOptions:
 
-.ifdef REGION_JP
+.if defined(REGION_JP) || defined(REGION_EU)
 	ld a,(wFileSelect.cursorPos2)
 	ld hl,@jpInputOffsets
 .else
@@ -1550,6 +1654,7 @@ drawNameInputCursors:
 +
 	ld a,(wFileSelect.cursorPos2)
 .endif
+
 	rst_addAToHl
 	ld c,(hl)
 	ld b,$00
@@ -1571,7 +1676,7 @@ drawNameInputCursors:
 	.db $3a $20 $2c $02 ; Cursor
 	.db $38 $20 $2a $81 ; Blue highlight
 
-.ifdef REGION_JP
+.if defined(REGION_JP) || defined(REGION_EU)
 	@jpInputOffsets:
 		.db $18 $30 $48 $60 $78
 .else
@@ -1734,9 +1839,8 @@ textInput_mapUpperXToLowerX:
 		.db $5a $03
 		.db $5b $03
 		.db $ff $ff
-
-.else ; REGION_US, REGION_EU
-
+.endif
+.ifdef REGION_US
 	@nameTable:
 		.db $50 $00
 		.db $51 $00
@@ -1769,7 +1873,45 @@ textInput_mapUpperXToLowerX:
 		.db $5c $03
 		.db $ff $ff
 .endif
+.ifdef REGION_EU
+	@nameTable:
+		.db $50 $00
+		.db $51 $00
+		.db $52 $00
+		.db $53 $01
+		.db $54 $01
+		.db $55 $02
+		.db $56 $02
+		.db $57 $03
+		.db $58 $03
+		.db $59 $04
+		.db $5a $04
+		.db $5b $04
+		.db $ff $ff
 
+	@secretTable:
+		.db $50 $00
+		.db $51 $00
+		.db $52 $00
+		.db $53 $01
+		.db $54 $01
+		.db $55 $02
+		.db $56 $02
+		.db $57 $02
+		.db $58 $02
+		.db $59 $03
+		.db $5a $03
+		.db $5b $03
+		.db $5c $03
+		.db $ff $ff
+.endif
+
+.ifdef REGION_EU
+fileSelectMode8:
+	.dsb $4ab5-$4979,0
+.endif
+
+.ifndef REGION_EU
 ;;
 ; Used only in japanese version
 func_02_494a:
@@ -1837,6 +1979,7 @@ func_02_494a:
 	.db $7c $ae
 	.db $7d $af
 	.db $00
+.endif
 
 ;;
 ; Load the appropriate characters based on whether it's doing name input or
@@ -1876,6 +2019,7 @@ textInput_loadCharacterGfx:
 	rlca
 	jr c,+
 
+.ifdef REGION_US
 	ldbc $3b, $40
 	call copyTextCharacters
 	jr ++
@@ -1884,6 +2028,22 @@ textInput_loadCharacterGfx:
 	ld b,$40
 	call copyTextCharactersFromHlUntilNull
 ++
+.else
+	ld hl,$4a3a
+	ld a,($cbb9)
+	or a
+	jr z,++
+	ld hl,$4a77
+++
+	call $40d7
+	jr ++
++
+	ld hl,$00a1
+	ld b,$40
+	call $40d7
+++
+.endif
+
 .endif
 
 	pop af
@@ -2657,6 +2817,14 @@ fileSelectDrawLink:
 	.db $4a $8c $30 $06
 	.db $4a $94 $32 $06
 
+.ifdef REGION_EU
+	.dw secretTextTable
+	.dw secretTextTableFR
+	.dw secretTextTableDE
+	.dw secretTextTableIT
+	.dw secretTextTableES
+.endif
+
 secretTextTable:
 	.dw @text0
 	.dw @text1
@@ -2854,6 +3022,435 @@ secretTextTable:
 	.asc "Symmetry" 0
 
 .endif ; REGION_US, REGION_EU
+
+.ifdef REGION_EU
+secretTextTableFR:
+	.dw @text0
+	.dw @text1
+	.dw @text2
+	.dw @text3
+	.dw @text4
+	.dw @text5
+	.dw @text6
+	.dw @text7
+	.dw @text8
+	.dw @text9
+	.dw @texta
+	.dw @textb
+	.dw @textc
+	.dw @textd
+	.dw @texte
+	.dw @textf
+	.dw @text10
+	.dw @text11
+	.dw @text12
+	.dw @text13
+	.dw @text14
+	.dw @text15
+	.dw @text16
+	.dw @text17
+	.dw @text18
+	.dw @text19
+@text0:
+.ifdef ROM_SEASONS
+	.db 0
+.endif
+@text1:
+	.asc "--------" 0
+
+@text2:
+	.db 0
+
+@text3:
+	.asc "Holodrum" 0
+
+@text4:
+	.asc "Labrynna" 0
+
+@text5:
+	.asc "Anneau" 0
+
+@text6:
+	.asc "Horloger" 0
+
+@text7:
+	.asc "Cimeti" 165 "re" 0
+
+@text8:
+	.asc "Subrosian" 0
+
+@text9:
+	.asc "Plongeur" 0
+
+@texta:
+	.asc "Forgeron" 0
+
+@textb:
+	.asc "Pirate" 0
+
+@textc:
+	.asc "Grande F" 166 "e" 0
+
+@textd:
+	.asc "Mojo" 0
+
+@texte:
+	.asc "Biggoron" 0
+
+@textf:
+	.asc "Ruul" 0
+
+@text10:
+	.asc "K. Zora" 0
+
+@text11:
+	.asc "F" 166 "e" 0
+
+@text12:
+	.asc "Tojay" 0
+
+@text13:
+	.asc "Plen" 0
+
+@text14:
+	.asc "Biblioth" 165 "que" 0
+
+@text15:
+	.asc "Troy" 0
+
+@text16:
+	.asc "Maman" 0
+
+@text17:
+	.asc "Tingle" 0
+
+@text18:
+	.asc "Ancien" 0
+
+@text19:
+	.asc "Sym" 166 "trie" 0
+
+secretTextTableDE:
+	.dw @text0
+	.dw @text1
+	.dw @text2
+	.dw @text3
+	.dw @text4
+	.dw @text5
+	.dw @text6
+	.dw @text7
+	.dw @text8
+	.dw @text9
+	.dw @texta
+	.dw @textb
+	.dw @textc
+	.dw @textd
+	.dw @texte
+	.dw @textf
+	.dw @text10
+	.dw @text11
+	.dw @text12
+	.dw @text13
+	.dw @text14
+	.dw @text15
+	.dw @text16
+	.dw @text17
+	.dw @text18
+	.dw @text19
+@text0:
+.ifdef ROM_SEASONS
+	.db 0
+.endif
+
+@text1:
+	.asc "--------" 0
+
+@text2:
+	.db 0
+
+@text3:
+	.asc "Holodrum" 0
+
+@text4:
+	.asc "Labrynna" 0
+
+@text5:
+	.asc "Ring" 0
+
+@text6:
+	.asc "Uhrengesch" 162 "ft" 0
+
+@text7:
+	.asc "Friedhof" 0
+
+@text8:
+	.asc "Subrosianer" 0
+
+@text9:
+	.asc "Schwimmer" 0
+
+@texta:
+	.asc "Schmied" 0
+
+@textb:
+	.asc "Pirat" 0
+
+@textc:
+	.asc "Gro" 145 "e Fee" 0
+
+@textd:
+	.asc "Laubkerl" 0
+
+@texte:
+	.asc "Biggoron" 0
+
+@textf:
+	.asc "Ruul" 0
+
+@text10:
+	.asc "K. Zora" 0
+
+@text11:
+	.asc "Fee" 0
+
+@text12:
+	.asc "Tokay" 0
+
+@text13:
+	.asc "Plen" 0
+
+@text14:
+	.asc "B" 176 "cherei" 0
+
+@text15:
+	.asc "Troy" 0
+
+@text16:
+	.asc "Mamamu" 0
+
+@text17:
+	.asc "Tingle" 0
+
+@text18:
+	.asc 130 "ltester" 0
+
+@text19:
+	.asc "Symmetria" 0
+
+secretTextTableIT:
+	.dw @text0
+	.dw @text1
+	.dw @text2
+	.dw @text3
+	.dw @text4
+	.dw @text5
+	.dw @text6
+	.dw @text7
+	.dw @text8
+	.dw @text9
+	.dw @texta
+	.dw @textb
+	.dw @textc
+	.dw @textd
+	.dw @texte
+	.dw @textf
+	.dw @text10
+	.dw @text11
+	.dw @text12
+	.dw @text13
+	.dw @text14
+	.dw @text15
+	.dw @text16
+	.dw @text17
+	.dw @text18
+	.dw @text19
+@text0:
+.ifdef ROM_SEASONS
+	.db 0
+.endif
+
+@text1:
+	.asc "--------" 0
+
+@text2:
+	.db 0
+
+@text3:
+	.asc "Holodrum" 0
+
+@text4:
+	.asc "Labrynna" 0
+
+@text5:
+	.asc "Anello" 0
+
+@text6:
+	.asc "Orologi" 0
+
+@text7:
+	.asc "Cimitero" 0
+
+@text8:
+	.asc "Subrosia" 0
+
+@text9:
+	.asc "Nuotatore" 0
+
+@texta:
+	.asc "Fabbro" 0
+
+@textb:
+	.asc "Pirata" 0
+
+@textc:
+	.asc "Grande Fata" 0
+
+@textd:
+	.asc "Deku" 0
+
+@texte:
+	.asc "Biggoron" 0
+
+@textf:
+	.asc "Ruul" 0
+
+@text10:
+	.asc "Re Zora" 0
+
+@text11:
+	.asc "Fata" 0
+
+@text12:
+	.asc "Tokay" 0
+
+@text13:
+	.asc "Plen" 0
+
+@text14:
+	.asc "Bibliot." 0
+
+@text15:
+	.asc "Troy" 0
+
+@text16:
+	.asc "Mamamu" 0
+
+@text17:
+	.asc "Tingle" 0
+
+@text18:
+	.asc "Anziano" 0
+
+@text19:
+	.asc "Simmetria" 0
+
+secretTextTableES:
+	.dw @text0
+	.dw @text1
+	.dw @text2
+	.dw @text3
+	.dw @text4
+	.dw @text5
+	.dw @text6
+	.dw @text7
+	.dw @text8
+	.dw @text9
+	.dw @texta
+	.dw @textb
+	.dw @textc
+	.dw @textd
+	.dw @texte
+	.dw @textf
+	.dw @text10
+	.dw @text11
+	.dw @text12
+	.dw @text13
+	.dw @text14
+	.dw @text15
+	.dw @text16
+	.dw @text17
+	.dw @text18
+	.dw @text19
+@text0:
+.ifdef ROM_SEASONS
+	.db 0
+.endif
+
+@text1:
+	.asc "--------" 0
+
+@text2:
+	.db 0
+
+@text3:
+	.asc "Holodrum" 0
+
+@text4:
+	.asc "Labrynna" 0
+
+@text5:
+	.asc "Anillo" 0
+
+@text6:
+	.asc "Relojer" 211 "a" 0
+
+@text7:
+	.asc "Cementerio" 0
+
+@text8:
+	.asc "Subrosio" 0
+
+@text9:
+	.asc "Buceador" 0
+
+@texta:
+	.asc "Herrero" 0
+
+@textb:
+	.asc "Pirata" 0
+
+@textc:
+	.asc "Gran Hada" 0
+
+@textd:
+	.asc "Deku" 0
+
+@texte:
+	.asc "Biggoron" 0
+
+@textf:
+	.asc "Ruul" 0
+
+@text10:
+	.asc "Rey Zora" 0
+
+@text11:
+	.asc "Hada" 0
+
+@text12:
+	.asc "Tokay" 0
+
+@text13:
+	.asc "Plen" 0
+
+@text14:
+	.asc "Biblioteca" 0
+
+@text15:
+	.asc "Troy" 0
+
+@text16:
+	.asc "Mamamu" 0
+
+@text17:
+	.asc "Tingle" 0
+
+@text18:
+	.asc "Anciano" 0
+
+@text19:
+	.asc "Simetr" 211 "a" 0
+.endif
 
 ;;
 ; @param h Index of function to run
@@ -9540,6 +10137,10 @@ ringMenu_state1_unappraisedRings:
 ; State 0: waiting for player to choose an unappraised ring
 ringMenu_unappraisedRings_state0:
 	ld a,(wTextIsActive)
+.ifdef REGION_EU
+	bit 0,a
+	ret nz
+.endif
 	or a
 	ld a,<TX_3004 ; "Which one shall I appraise?"
 	call z,ringMenu_setDisplayedText

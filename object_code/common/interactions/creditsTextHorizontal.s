@@ -204,7 +204,19 @@ interactionCodeae:
 	inc (hl)
 	ld l,Interaction.counter1
 	ld (hl),$10
+
+.ifdef REGION_EU
+	ld l,$42
+	ld a,(hl)
+	cp $03
+	jr z,$03
+	cp $07
+	ret nz
+	ld a,$5f
+	jp $0602
+.else
 	ret
+.endif
 
 @subsubstate3:
 	ld a,(wFrameCounter)

@@ -222,8 +222,12 @@ bitTable:
 
 	.ifdef REGION_JP
 		.ASC "AZ7J"
-	.else
+	.endif
+	.ifdef REGION_US
 		.asc "AZ7E"
+	.endif
+	.ifdef REGION_EU
+		.asc "AZ7P"
 	.endif
 .else ; ROM_AGES
 	.asc "ZELDA NAYRU"
@@ -1256,21 +1260,54 @@ loadGfxHeader:
 	ldh a,(<hRomBank)
 	ld b,a
 	push bc
+.ifndef REGION_EU
 	ld a,:bank1Moveable.gfxHeaderTable
+.else
+	ld a,:gfxHeaderTable
+.endif
 	setrombank
 	ld a,e
+.ifndef REGION_EU
 	ld hl,bank1Moveable.gfxHeaderTable
+.else
+	ld hl,gfxHeaderTable
+.endif
 	rst_addDoubleIndex
 	ldi a,(hl)
 	ld h,(hl)
 	ld l,a
 --
 	ldi a,(hl)
+
+.ifdef REGION_EU
+	or a
+	jr nz,++
+	ld a,(wActiveLanguage)
+	ld c,a
+	add a,a
+	add a,c
+	ld c,a
+	rst_addAToHl
+	ld a,$0c
+	sub c
+	ld b,a
+	ldi a,(hl)
 	ld c,a
 	ldi a,(hl)
 	ld d,a
 	ldi a,(hl)
 	ld e,a
+	ld a,b
+	rst_addAToHl
+	jr +
+.endif
+++
+	ld c,a
+	ldi a,(hl)
+	ld d,a
+	ldi a,(hl)
+	ld e,a
++
 	push de
 	ldi a,(hl)
 	ld d,a
@@ -1285,7 +1322,11 @@ loadGfxHeader:
 	ldh (<hFF91),a
 	pop hl
 	call decompressGraphics
+.ifndef REGION_EU
 	ld a,:bank1Moveable.gfxHeaderTable
+.else
+	ld a,:gfxHeaderTable
+.endif
 	setrombank
 	ldh a,(<hFF90)
 	ld l,a
@@ -1550,10 +1591,18 @@ loadTileset:
 	ld b,a
 	push bc
 
+.ifndef REGION_EU
 	ld a,:bank1Moveable.tilesetLayoutTable
+.else
+	ld a,:tilesetLayoutTable
+.endif
 	setrombank
 	ld a,e
+.ifndef REGION_EU
 	ld hl,bank1Moveable.tilesetLayoutTable
+.else
+	ld hl,tilesetLayoutTable
+.endif
 	rst_addDoubleIndex
 	ldi a,(hl)
 	ld h,(hl)
@@ -1561,7 +1610,11 @@ loadTileset:
 --
 	ldi a,(hl)
 	push hl
+.ifndef REGION_EU
 	ld hl,bank1Moveable.tilesetLayoutDictionaryTable
+.else
+	ld hl,tilesetLayoutDictionaryTable
+.endif
 	rst_addDoubleIndex
 	ldi a,(hl)
 	ld h,(hl)
@@ -1608,7 +1661,11 @@ loadTileset:
 	pop hl
 	call loadTilesetHlpr
 
+.ifndef REGION_EU
 	ld a,:bank1Moveable.tilesetLayoutTable
+.else
+	ld a, :tilesetLayoutTable
+.endif
 	setrombank
 
 	; Retrieve header position
@@ -2032,26 +2089,26 @@ flagLocationGroupTable:
 ; @param	hActiveFileSlot	File index
 initializeFile:
 	ld c,$00
-	jr ++
+	jr runFileOp
 
 ;;
 ; @param	hActiveFileSlot	File index
 saveFile:
 	ld c,$01
-	jr ++
+	jr runFileOp
 
 ;;
 ; @param	hActiveFileSlot	File index
 loadFile:
 	ld c,$02
-	jr ++
+	jr runFileOp
 
 ;;
 ; @param	hActiveFileSlot	File index
 eraseFile:
 	ld c,$03
 
-++
+runFileOp:
 	ldh a,(<hRomBank)
 	push af
 	callfrombank0 fileManagement.fileManagementFunction
@@ -2060,6 +2117,15 @@ eraseFile:
 	setrombank
 	ld a,c
 	ret
+
+.ifdef REGION_EU
+	ld b,a
+	ld c,$04
+	jr runFileOp
+
+	ld c,$05
+	jr runFileOp
+.endif
 
 ;;
 vblankInterrupt:
@@ -5378,10 +5444,21 @@ readByteFromW7TextTableBank:
 	ldh a,(<hRomBank)
 	push af
 
+.ifdef REGION_EU
+	ld a,b
+	jr $06
+	ldh a,($97)
+	push af
+.endif
+
 .ifdef REGION_JP
 	ld a,:textTableJP
 .else
 	ld a,(w7TextTableBank)
+.endif
+
+.ifdef REGION_EU
+	ld b,a
 .endif
 
 	bit 7,h
@@ -5389,8 +5466,15 @@ readByteFromW7TextTableBank:
 
 	res 7,h
 	set 6,h
+
+.ifndef REGION_EU
 	inc a
 +
+.else
+	inc b
++
+	ld a,b
+.endif
 	setrombank
 	ldi a,(hl)
 	ldh (<hFF8B),a

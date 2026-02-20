@@ -87,6 +87,11 @@ updateTextbox:
 	.dw @standardTextStatef
 	.dw @standardTextState10
 
+; TODO : EU alignment
+.ifdef REGION_EU
+	.db 0 0
+.endif
+
 ;;
 ; An option has come up (ie yes/no)
 @textOption:
@@ -1116,6 +1121,11 @@ textTableTable:
 	Pointer3Byte textTableENG
 	Pointer3Byte textTableENG
 	Pointer3Byte textTableENG
+.endif
+
+; TODO : EU alignment
+.ifdef REGION_EU
+	.dsb $5053-$5026,0
 .endif
 
 ;;

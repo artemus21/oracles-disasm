@@ -63,8 +63,16 @@ interactionCode1e:
 	ld e,Interaction.substate
 	xor a
 	ld (de),a
-	ret
 
+.ifdef REGION_EU
+	ld a,(w7TextboxMap+$33) ; why???
+	inc a
+	ret nz
+
+	jp @checkRespawnLink
+.else
+	ret
+.endif
 
 ; State 2: a door is opening
 @state2:
@@ -158,7 +166,9 @@ interactionCode1e:
 
 ; Door will now close fully
 
+.ifndef REGION_EU
 	call @checkRespawnLink
+.endif
 	call @func_47f9
 
 	ld e,Interaction.angle

@@ -4746,7 +4746,7 @@ specialObjectUpdateAdjacentWallsBitset:
 	ld c,(hl)
 	call calculateAdjacentWallsBitset
 
-.ifdef ROM_AGES
+.if defined(ROM_AGES) || defined(REGION_EU)
 	ld b,a
 	ld hl,@data-1
 --
@@ -4764,6 +4764,7 @@ specialObjectUpdateAdjacentWallsBitset:
 	ret
 ++
 	ld a,b
++++
 	ld e,SpecialObject.adjacentWallsBitset
 	ld (de),a
 	ret
@@ -4771,6 +4772,10 @@ specialObjectUpdateAdjacentWallsBitset:
 @data:
 	.db $db $c3
 	.db $ee $cc
+.ifdef REGION_EU
+	.db $99 $81
+	.db $66 $60
+.endif
 	.db $00
 .else
 +++
@@ -4778,6 +4783,39 @@ specialObjectUpdateAdjacentWallsBitset:
 	ld (de),a
 	ret
 .endif
+
+/*
+; don't know what this is yet...
+.ifdef REGION_EU
+	ld b,a
+	ld hl,@data-1
+-
+	inc hl
+	ldi a,(hl)
+	or a
+	jr z,+
+	cp b
+	jr nz,-
+	ld a,(hl)
+	ldh (<hFF8B),a
+	ld e,SpecialObject.adjacentWallsBitset
+	ld (de),a
+	ret
++
+	ld a,b
++++
+	ld e,SpecialObject.adjacentWallsBitset
+	ld (de),a
+	ret
+
+@data
+	.db $db $c3
+	.db $ee $cc
+	.db $99 $81
+	.db $66 $60
+	.db $00
+.endif
+*/
 
 ;;
 ; This function only really works with Link.

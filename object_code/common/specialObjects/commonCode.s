@@ -1155,8 +1155,14 @@ companionRespawn:
 	ldi (hl),a
 +
 .endif
+
+.ifdef REGION_EU
+	call objectCheckTileCollision_allowHoles
+	jr c,@invalidPosition
+.else
 	call objectCheckSimpleCollision
 	jr nz,@invalidPosition
+.endif
 
 	call objectGetPosition
 	call checkCollisionForCompanion
@@ -1467,11 +1473,23 @@ companionCheckCanSpawn:
 	ldi a,(hl)
 	ld e,SpecialObject.yh
 	ld (de),a
+
+.ifdef REGION_EU
+	add a,$05
+	ld b,a
+	ld a,(hl)
+	ld c,a
+	ld e,SpecialObject.xh
+	ld (de),a
+	call getTileCollisionsAtPosition
+.else
 	ld a,(hl)
 	ld e,SpecialObject.xh
 	ld (de),a
 	call objectGetTileCollisions
 	jr z,@canSpawn
+.endif
+
 	pop af
 	jp itemDelete
 
