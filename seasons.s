@@ -1043,3 +1043,21 @@ m_section_free Bank3f NAMESPACE bank3f
 .ends
 
 m_emptyfill
+
+.ifdef REGION_EU
+
+.repeat 26 INDEX I
+  .BANK ($65 + I) SLOT 1
+  .ORG 0
+  m_emptyfill
+.endr
+
+.BANK $7f SLOT 1
+.ORG 0
+	; This bank is meant to be empty.
+	; I'm putting stuff here while I make room for it lol.
+	.include {"{GAME_DATA_DIR}/gfxHeaders.s"}
+	.include {"{GAME_DATA_DIR}/tilesetHeaders.s"}
+	m_emptyfill
+
+.endif

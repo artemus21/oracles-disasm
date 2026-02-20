@@ -349,6 +349,11 @@ itemCode29:
 +
 	ld l,Item.angle
 	ld (hl),a
+.ifdef REGION_EU
+	ret nz
+	xor a
+	ld (de),a
+.endif
 	ret
 
 @loadBIntoAngleIfLinkLeftOfBallElseLoadC:

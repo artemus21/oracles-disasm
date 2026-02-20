@@ -950,6 +950,9 @@ vasuScript:
 
 	; Give ring box in linked game
 	showtextlowindex <TX_303b
+.ifdef REGION_EU
+	cp b ; TODO : ????????
+.endif
 	asm15 scriptHelp.vasu_giveRingBox
 	wait 1
 ++
@@ -968,6 +971,9 @@ vasuScript:
 
 	; Give ring box in unlinked game
 	showtextlowindex <TX_303b
+.ifdef REGION_EU
+	cp b ; TODO : ????????
+.endif
 	asm15 scriptHelp.vasu_giveRingBox
 	wait 1
 	setdisabledobjectsto11
@@ -975,6 +981,9 @@ vasuScript:
 ++
 	; Give friendship ring
 	showtextlowindex <TX_303f
+.ifdef REGION_EU
+	cp b ; TODO : ????????
+.endif
 	asm15 scriptHelp.vasu_giveFriendshipRing
 	wait 1
 	setdisabledobjectsto11

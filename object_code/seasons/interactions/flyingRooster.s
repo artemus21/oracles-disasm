@@ -356,6 +356,13 @@ interactionCode8c:
 	ld a,$ff
 	ld (hl),a
 
+.ifdef REGION_EU
+	ld e,$40
+	ld a,(de)
+	res 1,a
+	ld (de),a
+.endif
+
 	ld a,$05
 	ld e,Interaction.state
 	ld (de),a

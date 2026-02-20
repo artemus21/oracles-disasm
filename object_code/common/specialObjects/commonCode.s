@@ -1472,6 +1472,9 @@ companionCheckCanSpawn:
 	ld (de),a
 	call objectGetTileCollisions
 	jr z,@canSpawn
+.ifdef REGION_EU
+	.db 0 0
+.endif
 	pop af
 	jp itemDelete
 

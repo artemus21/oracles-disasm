@@ -22,7 +22,7 @@ enemyCode36:
 
 	; BUG: In JP version, attacking cuccos with gale seeds will put them into a glitched state
 	; where they cannot take damage. In the US version they get blown away like normal enemies.
-.ifndef ENABLE_US_BUGFIXES
+.if !defined(ENABLE_US_BUGFIXES) && !defined(ENABLE_EU_BUGFIXES)
 	jp cucco_attacked
 .else
 	cp $80|ITEMCOLLISION_GALE_SEED

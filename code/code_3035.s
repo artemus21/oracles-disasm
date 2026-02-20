@@ -115,7 +115,7 @@ playWaveSoundAtRandomIntervals:
 
 .endif
 
-.if defined(ROM_AGES) || defined(REGION_US)
+.if defined(ROM_AGES) || !defined(REGION_JP)
 ;;
 ; Same as "addSpritesToOam_withOffset", except this changes the bank first.
 ;

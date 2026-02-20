@@ -63,6 +63,9 @@ roomTileChangerCodeGroupTable:
 	.dw roomTileChangerCodeGroup5Data
 	.dw roomTileChangerCodeGroup6Data
 	.dw roomTileChangerCodeGroup7Data
+.ifdef REGION_EU
+	.dw roomTileChangerCodeGroup8Data
+.endif
 
 roomTileChangerCodeGroup0Data:
 	.db $c5 $00
@@ -87,6 +90,9 @@ roomTileChangerCodeGroup0Data:
 	.db $56 $28
 	.db $4b $1d
 	.db $f6 $08
+.ifdef REGION_EU
+	.db $7b $2f
+.endif
 	.db $00
 
 roomTileChangerCodeGroup1Data:
@@ -132,6 +138,8 @@ roomTileChangerCodeGroup7Data:
 	.db $00
 
 	ret
+
+roomTileChangerCodeGroup8Data:
 
 ; Adds a sign outside couple's house
 tileReplacement_group0Mapf6:
@@ -905,6 +913,12 @@ tileReplacement_group2_3Mapab:
 	ld l,$17
 	ld (hl),a
 	ret
+
+
+; TODO : EU alignment
+.ifdef REGION_EU
+	.db 0 0 0 0 0 0
+.endif
 
 ;;
 ; @param	hl	pointer to data structure

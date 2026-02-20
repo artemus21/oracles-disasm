@@ -21,6 +21,13 @@ interactionCodea3:
 	.dw @state4
 
 @state0:
+
+.ifdef REGION_EU
+	ld e,$49
+	ld a,$18
+	ld (de),a
+.endif
+
 	ld e,Interaction.subid
 	ld a,(de)
 	ld hl,@subidData
@@ -244,12 +251,29 @@ sidescrollPlatform_checkLinkIsClose:
 ; @param[out]	a	Collision value
 ; @param[out]	zflag	nz if a valid collision value is returned
 sidescrollPlatform_getTileCollisionBehindLink:
+
+.ifdef REGION_EU
+	ld e,$41
+	ld a,(de)
+	cp $a3
+	ld bc,$fb04
+	jr nz,+
+	ld bc,$f40b
++
+.endif
+
 	ld l,Interaction.xh
 	ld a,(w1Link.xh)
 	cp (hl)
+.ifndef REGION_EU
 	ld b,-$05
+.endif
 	jr c,+
+.ifdef REGION_EU
+	ld b,c
+.else
 	ld b,$04
+.endif
 +
 	add b
 	ld c,a
@@ -391,8 +415,15 @@ sidescrollPlatform_pushLinkAwayHorizontal:
 	ld e,Interaction.xh
 +++
 	ld a,(de)
+.ifdef REGION_EU
+	ld c,a
+	ld a,(hl)
+	cp c
+	jr nc,++
+.else
 	cp (hl)
 	jr c,++
+.endif
 	ld a,b
 	cpl
 	inc a

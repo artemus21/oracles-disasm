@@ -4939,6 +4939,9 @@ companionScript_mooshInSpoolSwamp:
 	checkflagset $02, wMooshState
 	writememory $d13f, $03
 	writememory $d103, $06
+.ifdef REGION_EU
+	.db $bc ; ???????
+.endif
 	writememory $d13d, $00
 	checkmemoryeq $d13d, $01
 	disablemenu

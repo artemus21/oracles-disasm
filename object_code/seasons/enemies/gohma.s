@@ -326,7 +326,16 @@ gohma_subid1_stateC:
 	ld l,Enemy.counter2
 	ld a,(hl)
 	or a
+.ifndef REGION_EU
 	jr z,gohma_beginLungeTowardLink
+.else
+	jr nz,gohma_movingNormally
+	ld l,Enemy.xh
+	ld a,(hl)
+	sub $28
+	cp $a0
+	jr c,gohma_beginLungeTowardLink
+.endif
 
 gohma_movingNormally:
 	call gohma_checkWallsAndPlayWalkingSound

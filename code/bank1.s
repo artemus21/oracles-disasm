@@ -3963,6 +3963,12 @@ func_5cfe:
 	inc l
 	xor a
 	ld (hl),a
+	
+; TODO : EU alignment
+.ifdef REGION_EU
+	.db 0 0 0 0 0 0
+.endif
+
 	jr @end
 .endif
 
@@ -5346,8 +5352,10 @@ m_section_superfree Bank_1_Data_2 NAMESPACE bank1Moveable
 
 	.include {"{GAME_DATA_DIR}/paletteHeaders.s"}
 	.include {"{GAME_DATA_DIR}/uncmpGfxHeaders.s"}
+.ifndef REGION_EU
 	.include {"{GAME_DATA_DIR}/gfxHeaders.s"}
 	.include {"{GAME_DATA_DIR}/tilesetHeaders.s"}
+.endif
 
 .ends
 

@@ -4779,6 +4779,13 @@ specialObjectUpdateAdjacentWallsBitset:
 	ret
 .endif
 
+.ifdef REGION_EU
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0 0 0 0
+	.db 0 0 0 0 0
+.endif
+
 ;;
 ; This function only really works with Link.
 ;
